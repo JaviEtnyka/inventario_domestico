@@ -7,29 +7,46 @@ class CustomCard extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final VoidCallback? onTap;
   final Color? color;
+  final double? elevation;
+  final BorderRadius? borderRadius; // Cambiado de BorderRadiusGeometry a BorderRadius
   
-  const CustomCard({super.key, 
+  const CustomCard({
+    Key? key,
     required this.child,
     this.padding,
     this.onTap,
     this.color,
-  });
+    this.elevation,
+    this.borderRadius,
+  }) : super(key: key);
   
   @override
   Widget build(BuildContext context) {
+    final BorderRadius br = borderRadius ?? BorderRadius.circular(AppTheme.borderRadius);
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+        borderRadius: br,
       ),
-      elevation: 2,
+      elevation: elevation ?? 0,
       color: color ?? AppTheme.cardColor,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppTheme.borderRadius),
-        child: Padding(
-          padding: padding ?? const EdgeInsets.all(16),
-          child: child,
+      shadowColor: Colors.black.withOpacity(0.1),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: br,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: br,
+              boxShadow: elevation != null && elevation! > 0 ? [AppTheme.cardShadow] : null,
+            ),
+            child: Padding(
+              padding: padding ?? const EdgeInsets.all(16),
+              child: child,
+            ),
+          ),
         ),
       ),
     );
@@ -41,25 +58,29 @@ class InfoCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color? iconColor;
+  final VoidCallback? onTap;
   
-  const InfoCard({super.key, 
+  const InfoCard({
+    Key? key,
     required this.title,
     required this.value,
     required this.icon,
     this.iconColor,
-  });
+    this.onTap,
+  }) : super(key: key);
   
   @override
   Widget build(BuildContext context) {
     return CustomCard(
-      padding: const EdgeInsets.all(16),
+      onTap: onTap,
+      elevation: 0,
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: (iconColor ?? Theme.of(context).primaryColor).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               icon,
@@ -82,6 +103,81 @@ class InfoCard extends StatelessWidget {
                   style: AppTheme.titleStyle,
                 ),
               ],
+            ),
+          ),
+          if (onTap != null)
+            const Icon(
+              Icons.chevron_right,
+              color: AppTheme.textSecondaryColor,
+              size: 20,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// Widget adicional moderno para información con icono
+class StatusCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
+  
+  const StatusCard({
+    Key? key,
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+  }) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.textSecondaryColor,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimaryColor,
             ),
           ),
         ],

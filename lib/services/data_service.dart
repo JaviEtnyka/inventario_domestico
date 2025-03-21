@@ -3,12 +3,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import '../controllers/item_controller.dart';
 import '../controllers/category_controller.dart';
 import '../controllers/location_controller.dart';
+import 'package:file_selector/file_selector.dart';
 
 class DataService {
   // Controladores
@@ -69,7 +69,7 @@ class DataService {
       await file.writeAsString(csv);
       
       // Compartir archivo
-      await Share.shareFiles([file.path], text: 'Inventario Doméstico');
+      await Share.shareXFiles([XFile(file.path)], text: 'Inventario Doméstico');
       
       return file.path;
     } catch (e) {
@@ -134,7 +134,7 @@ class DataService {
       await file.writeAsString(jsonString);
       
       // Compartir archivo
-      await Share.shareFiles([file.path], text: 'Inventario Doméstico');
+      await Share.shareXFiles([XFile(file.path)], text: 'Inventario Doméstico');
       
       return file.path;
     } catch (e) {
@@ -144,34 +144,38 @@ class DataService {
   }
   
   // Importar inventario desde archivo JSON
-  Future<bool> importInventoryFromJson() async {
-    try {
-      // Seleccionar archivo
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-      );
+Future<bool> importInventoryFromJson() async {
+  try {
+    // Definir los tipos de archivo permitidos
+    const XTypeGroup jsonTypeGroup = XTypeGroup(
+      label: 'JSON',
+      extensions: ['json'],
+    );
+    
+    // Seleccionar archivo
+    final XFile? file = await openFile(
+      acceptedTypeGroups: [jsonTypeGroup],
+    );
+    
+    if (file != null) {
+      // Leer archivo
+      final jsonString = await file.readAsString();
       
-      if (result != null) {
-        // Leer archivo
-        final file = File(result.files.single.path!);
-        final jsonString = await file.readAsString();
-        
-        // Decodificar JSON
-        final jsonData = jsonDecode(jsonString);
-        
-        // TODO: Implementar la lógica para guardar los datos en la base de datos
-        // Esto dependerá de la implementación de tu API y servicios
-        
-        return true;
-      }
+      // Decodificar JSON
+      final jsonData = jsonDecode(jsonString);
       
-      return false;
-    } catch (e) {
-      print('Error al importar desde JSON: $e');
-      return false;
+      // TODO: Implementar la lógica para guardar los datos en la base de datos
+      // Esto dependerá de la implementación de tu API y servicios
+      
+      return true;
     }
+    
+    return false;
+  } catch (e) {
+    print('Error al importar desde JSON: $e');
+    return false;
   }
+}
   
   // Realizar copia de seguridad
   Future<bool> createBackup() async {

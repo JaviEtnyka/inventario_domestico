@@ -9,7 +9,6 @@ import 'providers/theme_provider.dart';
 import 'providers/language_provider.dart';
 import 'services/preferences_service.dart';
 import 'services/theme_service.dart';
-import 'services/notification_service.dart';
 
 void main() async {
   // Asegurar que Flutter está inicializado
@@ -22,9 +21,7 @@ void main() async {
   final themeService = ThemeService();
   themeService.init();
   
-  final notificationService = NotificationService();
-  await notificationService.init();
-  
+   
   // Establecer orientación preferida
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -70,7 +67,7 @@ class MyApp extends StatelessWidget {
               Locale('fr', 'FR'),
               Locale('de', 'DE'),
             ],
-            home: HomeScreen(),
+            home: const HomeScreen(),
           );
         },
       ),

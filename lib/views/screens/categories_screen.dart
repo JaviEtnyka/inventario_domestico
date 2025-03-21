@@ -1,20 +1,18 @@
-// views/screens/categories_screen.dart (mejorado)
+// views/screens/categories_screen.dart
 import 'package:flutter/material.dart';
 import '../../models/category.dart';
 import '../../controllers/category_controller.dart';
 import '../../config/app_theme.dart';
-import '../widgets/custom_card.dart';
 import 'category_details_screen.dart';
-import 'add_category_screen.dart';
 
 class CategoriesScreen extends StatefulWidget {
-  const CategoriesScreen({super.key});
+  const CategoriesScreen({Key? key}) : super(key: key);
 
   @override
   _CategoriesScreenState createState() => _CategoriesScreenState();
 }
 
-class _CategoriesScreenState extends State<CategoriesScreen> {
+class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepAliveClientMixin {
   final CategoryController _categoryController = CategoryController();
   late Future<List<Category>> _categoriesFuture;
   bool _isLoading = false;
@@ -22,10 +20,20 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   String _searchQuery = '';
   
   @override
-  void initState() {
-    super.initState();
-    _loadCategories();
-  }
+  bool get wantKeepAlive => true;
+  
+  @override
+void initState() {
+  super.initState();
+  _loadCategories();
+}
+
+@override
+void didUpdateWidget(CategoriesScreen oldWidget) {
+  super.didUpdateWidget(oldWidget);
+  // Esto se ejecutará cuando el widget se reconstruya con una nueva key
+  _loadCategories();
+}
   
   Future<void> _loadCategories() async {
     setState(() {
@@ -48,16 +56,49 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       body: Column(
         children: [
           // Barra de búsqueda
-          _buildSearchBar(),
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Buscar categorías...',
+                  prefixIcon: const Icon(Icons.search, color: AppTheme.textSecondaryColor),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  hintStyle: TextStyle(color: AppTheme.textSecondaryColor.withOpacity(0.7)),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value.toLowerCase();
+                  });
+                  _loadCategories();
+                },
+              ),
+            ),
+          ),
           
           // Lista de categorías
           Expanded(
             child: _isLoading 
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator(
+                  color: AppTheme.categoryColor,
+                ))
               : _errorMessage.isNotEmpty
                 ? _buildErrorView()
                 : _buildCategoryList(),
@@ -67,45 +108,31 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     );
   }
   
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'Buscar categorías...',
-          prefixIcon: const Icon(Icons.search),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppTheme.borderRadius),
-          ),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(vertical: 0),
-        ),
-        onChanged: (value) {
-          setState(() {
-            _searchQuery = value.toLowerCase();
-            _loadCategories();
-          });
-        },
-      ),
-    );
-  }
-  
   Widget _buildErrorView() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.error_outline,
-            color: AppTheme.errorColor,
-            size: 48,
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppTheme.errorColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: const Icon(
+              Icons.error_outline,
+              color: AppTheme.errorColor,
+              size: 48,
+            ),
           ),
           const SizedBox(height: 16),
-          Text(
-            _errorMessage,
-            style: const TextStyle(color: AppTheme.errorColor),
-            textAlign: TextAlign.center,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              _errorMessage,
+              style: const TextStyle(color: AppTheme.errorColor),
+              textAlign: TextAlign.center,
+            ),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
@@ -113,9 +140,12 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             icon: const Icon(Icons.refresh),
             label: const Text('Reintentar'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.errorColor,
+              backgroundColor: AppTheme.categoryColor,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ],
@@ -128,11 +158,14 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       onRefresh: () async {
         await _loadCategories();
       },
+      color: AppTheme.categoryColor,
       child: FutureBuilder<List<Category>>(
         future: _categoriesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator(
+              color: AppTheme.categoryColor,
+            ));
           }
           
           if (snapshot.hasError) {
@@ -140,7 +173,18 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, color: AppTheme.errorColor, size: 48),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppTheme.errorColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: const Icon(
+                      Icons.error_outline,
+                      color: AppTheme.errorColor,
+                      size: 48,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Error: ${snapshot.error}',
@@ -151,6 +195,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     onPressed: _loadCategories,
                     icon: const Icon(Icons.refresh),
                     label: const Text('Reintentar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.categoryColor,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    ),
                   ),
                 ],
               ),
@@ -171,18 +219,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             return _buildEmptyState();
           }
           
-          return GridView.builder(
+          // Mostrar como lista en lugar de cuadrícula
+          return ListView.builder(
             padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 1.2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-            ),
             itemCount: categories.length,
             itemBuilder: (context, index) {
               final category = categories[index];
-              return _buildCategoryCard(category);
+              return _buildCategoryListItem(category);
             },
           );
         },
@@ -190,9 +233,38 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     );
   }
   
-  Widget _buildCategoryCard(Category category) {
-    return CustomCard(
-      padding: const EdgeInsets.all(0),
+  Widget _buildCategoryListItem(Category category) {
+    // Lista de iconos temáticos para diferentes categorías
+    IconData getCategoryIcon(String name) {
+      name = name.toLowerCase();
+      if (name.contains('electr')) {
+        return Icons.devices;
+      } else if (name.contains('mueble') || name.contains('mobil')) {
+        return Icons.chair;
+      } else if (name.contains('ropa') || name.contains('vest')) {
+        return Icons.checkroom;
+      } else if (name.contains('joyer') || name.contains('joy')) {
+        return Icons.diamond;
+      } else if (name.contains('libro') || name.contains('document')) {
+        return Icons.menu_book;
+      } else if (name.contains('cocina') || name.contains('coc')) {
+        return Icons.kitchen;
+      } else if (name.contains('deporte') || name.contains('activ')) {
+        return Icons.sports_soccer;
+      } else if (name.contains('juguete') || name.contains('juego')) {
+        return Icons.toys;
+      } else if (name.contains('arte') || name.contains('decora')) {
+        return Icons.palette;
+      } else if (name.contains('mascota') || name.contains('animal')) {
+        return Icons.pets;
+      } else if (name.contains('herram') || name.contains('tool')) {
+        return Icons.build;
+      } else {
+        return Icons.category;
+      }
+    }
+    
+    return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
@@ -207,73 +279,84 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           }
         });
       },
-      child: Stack(
-        children: [
-          // Contenido principal
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Icono
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: AppTheme.categoryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.category,
-                    color: AppTheme.categoryColor,
-                    size: 30,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                
-                // Nombre
-                Text(
-                  category.name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                
-                // Descripción
-                if (category.description.isNotEmpty)
-                  Text(
-                    category.description,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.black54,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-              ],
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
             ),
-          ),
-          
-          // Indicador visual en la esquina
-          Positioned(
-            top: 0,
-            right: 0,
-            child: Container(
-              width: 20,
-              height: 20,
-              decoration: const BoxDecoration(
-                color: AppTheme.categoryColor,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(8),
-                  topRight: Radius.circular(AppTheme.borderRadius),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Icono
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppTheme.categoryColor.withOpacity(0.1),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
+                ),
+              ),
+              child: Center(
+                child: Icon(
+                  getCategoryIcon(category.name),
+                  color: AppTheme.categoryColor,
+                  size: 36,
                 ),
               ),
             ),
-          ),
-        ],
+            
+            // Información
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      category.name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimaryColor,
+                      ),
+                    ),
+                    
+                    if (category.description.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        category.description,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.textSecondaryColor,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            
+            // Flecha
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Icon(
+                Icons.chevron_right,
+                color: AppTheme.categoryColor,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -283,41 +366,64 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.category_outlined,
-            size: 72,
-            color: Colors.grey[400],
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppTheme.categoryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: Icon(
+              Icons.category_outlined,
+              size: 64,
+              color: AppTheme.categoryColor.withOpacity(0.5),
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Text(
             _searchQuery.isEmpty 
                 ? 'No hay categorías disponibles' 
                 : 'No se encontraron resultados para "$_searchQuery"',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
-              color: Colors.grey[600],
+              color: AppTheme.textSecondaryColor,
+              fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AddCategoryScreen()),
-              ).then((result) {
-                if (result == true) {
-                  _loadCategories();
-                }
-              });
-            },
-            icon: const Icon(Icons.add),
-            label: const Text('Añadir Categoría'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.categoryColor,
-              foregroundColor: Colors.white,
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              _searchQuery.isEmpty 
+                  ? 'Comienza añadiendo tu primera categoría con el botón + de abajo'
+                  : 'Intenta con otra búsqueda o vuelve a la lista completa',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.textSecondaryColor.withOpacity(0.7),
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
+          const SizedBox(height: 32),
+          if (_searchQuery.isNotEmpty)
+            ElevatedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _searchQuery = '';
+                });
+                _loadCategories();
+              },
+              icon: const Icon(Icons.close),
+              label: const Text('Limpiar búsqueda'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.categoryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
         ],
       ),
     );

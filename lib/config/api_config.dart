@@ -28,6 +28,6 @@ class ApiConfig {
   static const String deleteLocation = '$locationsEndpoint/delete.php';
   
   // Endpoints de imágenes
-  static const String uploadImage = '$baseUrl/upload.php';
-  static const String uploadMultipleImages = '$baseUrl/upload-multiple.php';
+  static const String uploadImage = 'http://rek-internova.com/inventario-api/api/upload.php';
+  static const String uploadMultipleImages = 'http://rek-internova.com/inventario-api/api/upload-multiple.php';
 }

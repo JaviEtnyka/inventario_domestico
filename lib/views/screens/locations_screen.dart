@@ -1,25 +1,26 @@
-// views/screens/locations_screen.dart (mejorado)
+// views/screens/locations_screen.dart
 import 'package:flutter/material.dart';
 import '../../models/location.dart';
 import '../../controllers/location_controller.dart';
 import '../../config/app_theme.dart';
-import '../widgets/custom_card.dart';
 import 'location_details_screen.dart';
-import 'add_location_screen.dart';
 
 class LocationsScreen extends StatefulWidget {
-  const LocationsScreen({super.key});
+  const LocationsScreen({Key? key}) : super(key: key);
 
   @override
   _LocationsScreenState createState() => _LocationsScreenState();
 }
 
-class _LocationsScreenState extends State<LocationsScreen> {
+class _LocationsScreenState extends State<LocationsScreen> with AutomaticKeepAliveClientMixin {
   final LocationController _locationController = LocationController();
   late Future<List<Location>> _locationsFuture;
   bool _isLoading = false;
   String _errorMessage = '';
   String _searchQuery = '';
+  
+  @override
+  bool get wantKeepAlive => true;
   
   @override
   void initState() {
@@ -48,16 +49,49 @@ class _LocationsScreenState extends State<LocationsScreen> {
   
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       body: Column(
         children: [
           // Barra de búsqueda
-          _buildSearchBar(),
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Buscar ubicaciones...',
+                  prefixIcon: const Icon(Icons.search, color: AppTheme.textSecondaryColor),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  hintStyle: TextStyle(color: AppTheme.textSecondaryColor.withOpacity(0.7)),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value.toLowerCase();
+                  });
+                  _loadLocations();
+                },
+              ),
+            ),
+          ),
           
           // Lista de ubicaciones
           Expanded(
             child: _isLoading 
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator(
+                  color: AppTheme.locationColor,
+                ))
               : _errorMessage.isNotEmpty
                 ? _buildErrorView()
                 : _buildLocationList(),
@@ -67,45 +101,31 @@ class _LocationsScreenState extends State<LocationsScreen> {
     );
   }
   
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'Buscar ubicaciones...',
-          prefixIcon: const Icon(Icons.search),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppTheme.borderRadius),
-          ),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(vertical: 0),
-        ),
-        onChanged: (value) {
-          setState(() {
-            _searchQuery = value.toLowerCase();
-            _loadLocations();
-          });
-        },
-      ),
-    );
-  }
-  
   Widget _buildErrorView() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.error_outline,
-            color: AppTheme.errorColor,
-            size: 48,
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppTheme.errorColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: const Icon(
+              Icons.error_outline,
+              color: AppTheme.errorColor,
+              size: 48,
+            ),
           ),
           const SizedBox(height: 16),
-          Text(
-            _errorMessage,
-            style: const TextStyle(color: AppTheme.errorColor),
-            textAlign: TextAlign.center,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              _errorMessage,
+              style: const TextStyle(color: AppTheme.errorColor),
+              textAlign: TextAlign.center,
+            ),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
@@ -113,9 +133,12 @@ class _LocationsScreenState extends State<LocationsScreen> {
             icon: const Icon(Icons.refresh),
             label: const Text('Reintentar'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.errorColor,
+              backgroundColor: AppTheme.locationColor,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ],
@@ -128,11 +151,14 @@ class _LocationsScreenState extends State<LocationsScreen> {
       onRefresh: () async {
         await _loadLocations();
       },
+      color: AppTheme.locationColor,
       child: FutureBuilder<List<Location>>(
         future: _locationsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator(
+              color: AppTheme.locationColor,
+            ));
           }
           
           if (snapshot.hasError) {
@@ -140,7 +166,18 @@ class _LocationsScreenState extends State<LocationsScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, color: AppTheme.errorColor, size: 48),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppTheme.errorColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: const Icon(
+                      Icons.error_outline,
+                      color: AppTheme.errorColor,
+                      size: 48,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Error: ${snapshot.error}',
@@ -151,6 +188,10 @@ class _LocationsScreenState extends State<LocationsScreen> {
                     onPressed: _loadLocations,
                     icon: const Icon(Icons.refresh),
                     label: const Text('Reintentar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.locationColor,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    ),
                   ),
                 ],
               ),
@@ -171,12 +212,13 @@ class _LocationsScreenState extends State<LocationsScreen> {
             return _buildEmptyState();
           }
           
+          // Mostrar como lista en lugar de cuadrícula
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: locations.length,
             itemBuilder: (context, index) {
               final location = locations[index];
-              return _buildLocationCard(location);
+              return _buildLocationListItem(location);
             },
           );
         },
@@ -184,33 +226,30 @@ class _LocationsScreenState extends State<LocationsScreen> {
     );
   }
   
-  Widget _buildLocationCard(Location location) {
-    // Iconos para diferentes tipos de ubicaciones (puedes personalizarlos)
+  Widget _buildLocationListItem(Location location) {
+    // Iconos para diferentes tipos de ubicaciones
     IconData getLocationIcon(String name) {
       name = name.toLowerCase();
       if (name.contains('sala') || name.contains('salón')) {
         return Icons.weekend;
-      } else if (name.contains('cocina'))
+      } else if (name.contains('cocina')) {
         return Icons.kitchen;
-      else if (name.contains('baño'))
+      } else if (name.contains('baño')) {
         return Icons.bathtub;
-      else if (name.contains('dormitorio') || name.contains('habitación'))
+      } else if (name.contains('dormitorio') || name.contains('habitación')) {
         return Icons.bed;
-      else if (name.contains('garaje'))
+      } else if (name.contains('garaje')) {
         return Icons.garage;
-      else if (name.contains('jardín') || name.contains('terraza'))
+      } else if (name.contains('jardín') || name.contains('terraza')) {
         return Icons.deck;
-      else if (name.contains('oficina') || name.contains('despacho'))
+      } else if (name.contains('oficina') || name.contains('despacho')) {
         return Icons.business_center;
-      else
+      } else {
         return Icons.place;
+      }
     }
     
-    // Obtener el icono adecuado
-    final icon = getLocationIcon(location.name);
-    
-    return CustomCard(
-      padding: const EdgeInsets.all(0),
+    return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
@@ -226,39 +265,44 @@ class _LocationsScreenState extends State<LocationsScreen> {
         });
       },
       child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppTheme.borderRadius),
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: [
-              Colors.white,
-              AppTheme.locationColor.withOpacity(0.1),
-            ],
-          ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              // Icono
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: AppTheme.locationColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  icon,
-                  color: AppTheme.locationColor,
-                  size: 32,
+        child: Row(
+          children: [
+            // Icono
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppTheme.locationColor.withOpacity(0.1),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
                 ),
               ),
-              const SizedBox(width: 16),
-              
-              // Información
-              Expanded(
+              child: Center(
+                child: Icon(
+                  getLocationIcon(location.name),
+                  color: AppTheme.locationColor,
+                  size: 36,
+                ),
+              ),
+            ),
+            
+            // Información
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -267,15 +311,17 @@ class _LocationsScreenState extends State<LocationsScreen> {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimaryColor,
                       ),
                     ),
+                    
                     if (location.description.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
                         location.description,
                         style: const TextStyle(
                           fontSize: 14,
-                          color: Colors.black54,
+                          color: AppTheme.textSecondaryColor,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -284,14 +330,17 @@ class _LocationsScreenState extends State<LocationsScreen> {
                   ],
                 ),
               ),
-              
-              // Flecha
-              const Icon(
+            ),
+            
+            // Flecha
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Icon(
                 Icons.chevron_right,
-                color: Colors.grey,
+                color: AppTheme.locationColor,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -302,41 +351,64 @@ class _LocationsScreenState extends State<LocationsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.place_outlined,
-            size: 72,
-            color: Colors.grey[400],
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppTheme.locationColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: Icon(
+              Icons.place_outlined,
+              size: 64,
+              color: AppTheme.locationColor.withOpacity(0.5),
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Text(
             _searchQuery.isEmpty 
                 ? 'No hay ubicaciones disponibles' 
                 : 'No se encontraron resultados para "$_searchQuery"',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
-              color: Colors.grey[600],
+              color: AppTheme.textSecondaryColor,
+              fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AddLocationScreen()),
-              ).then((result) {
-                if (result == true) {
-                  _loadLocations();
-                }
-              });
-            },
-            icon: const Icon(Icons.add),
-            label: const Text('Añadir Ubicación'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.locationColor,
-              foregroundColor: Colors.white,
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              _searchQuery.isEmpty 
+                  ? 'Comienza añadiendo tu primera ubicación con el botón + de abajo'
+                  : 'Intenta con otra búsqueda o vuelve a la lista completa',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.textSecondaryColor.withOpacity(0.7),
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
+          const SizedBox(height: 32),
+          if (_searchQuery.isNotEmpty)
+            ElevatedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _searchQuery = '';
+                });
+                _loadLocations();
+              },
+              icon: const Icon(Icons.close),
+              label: const Text('Limpiar búsqueda'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.locationColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
         ],
       ),
     );

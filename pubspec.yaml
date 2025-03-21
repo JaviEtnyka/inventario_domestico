@@ -11,28 +11,27 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  http: ^0.13.5
-  intl: 0.19.0
-  image_picker: ^0.8.6
   path_provider: ^2.0.11
-  image: ^3.2.2
+  win32: ^5.0.0  # Actualiza a la última versión estable
   
   # Nuevas dependencias para funcionalidades de ajustes
-  shared_preferences: ^2.0.15
-  provider: ^6.0.5
-  flutter_local_notifications: ^13.0.0
-  timezone: ^0.9.1
-  permission_handler: ^10.2.0
-  file_picker: ^5.2.5
-  csv: ^5.0.1
-  share_plus: ^6.3.0
-  excel: ^2.1.0
+  permission_handler: ^11.4.0  # Esta versión ya la tienes
+  file_selector: ^1.0.3  # Ya tienes esta versión
+  http: ^1.3.0  # Ya tienes esta versión
+  image: ^4.3.0  # Ya tienes esta versión
+  image_picker: ^1.1.2  # Ya tienes esta versión
+  intl: 0.19.0  # Ya tienes esta versión
+  share_plus: ^10.1.4  # Ya tienes esta versión
+  csv: ^6.0.0  # Ya tienes esta versión
+  excel: ^4.0.6  # Ya tienes esta versión
+  timezone: ^0.10.0  # Ya tienes esta versión
+  provider: ^6.0.5  # Usa la última versión estable
+  shared_preferences: ^2.2.0
   
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.0
+  flutter_lints: ^5.0.0
 
 flutter:
   uses-material-design: true

@@ -6,7 +6,6 @@ import '../../config/app_config.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/language_provider.dart';
 import '../../services/preferences_service.dart';
-import '../../services/notification_service.dart';
 import '../../services/data_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -19,7 +18,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   // Servicios
   final PreferencesService _preferencesService = PreferencesService();
-  final NotificationService _notificationService = NotificationService();
   final DataService _dataService = DataService();
   
   // Estado
@@ -74,16 +72,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             value: notificationsEnabled,
             onChanged: (value) async {
               await _preferencesService.setNotificationsEnabled(value);
-              
-              // Mostrar notificación de prueba si se activan
-              if (value) {
-                await _notificationService.showNotification(
-                  title: 'Notificaciones activadas',
-                  body: 'Recibirás alertas sobre tu inventario',
-                );
-              } else {
-                await _notificationService.cancelAllNotifications();
-              }
               
               setState(() {});
             },
@@ -435,7 +423,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 48),
                 ),
-                child: Text('Cerrar'),
+                child: const Text('Cerrar'),
               ),
             ),
           ],

@@ -48,4 +48,14 @@ Future<void> updateCategory(Category category) async {
     rethrow;
   }
 }
+// Eliminar una categoría
+Future<void> deleteCategory(int id) async {
+  try {
+    print('CategoryController: Eliminando categoría con ID $id');
+    await ApiService.deleteCategory(id);
+  } catch (e) {
+    print('Error en CategoryController.deleteCategory: $e');
+    rethrow;
+  }
+}
 }
