@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:excel/excel.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:cross_file/cross_file.dart'; // Añade este import para XFile
+// Añade este import para XFile
 import '../controllers/item_controller.dart';
 import '../controllers/category_controller.dart';
 import '../controllers/location_controller.dart';

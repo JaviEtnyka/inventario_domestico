@@ -7,7 +7,7 @@ import '../widgets/item_list_card.dart';
 import 'item_details_screen.dart';
 
 class InventoryScreen extends StatefulWidget {
-  const InventoryScreen({Key? key}) : super(key: key);
+  const InventoryScreen({super.key});
 
   @override
   _InventoryScreenState createState() => _InventoryScreenState();

@@ -11,7 +11,7 @@ class ItemDetailsScreen extends StatelessWidget {
   final Item item;
   final ItemController _itemController = ItemController();
   
-  ItemDetailsScreen({Key? key, required this.item}) : super(key: key);
+  ItemDetailsScreen({super.key, required this.item});
   
   @override
   Widget build(BuildContext context) {

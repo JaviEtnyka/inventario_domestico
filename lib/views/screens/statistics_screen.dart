@@ -7,7 +7,7 @@ import '../../controllers/location_controller.dart';
 import '../../models/item.dart';
 
 class StatisticsScreen extends StatefulWidget {
-  const StatisticsScreen({Key? key}) : super(key: key);
+  const StatisticsScreen({super.key});
 
   @override
   _StatisticsScreenState createState() => _StatisticsScreenState();

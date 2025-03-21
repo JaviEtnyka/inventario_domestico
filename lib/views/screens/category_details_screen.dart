@@ -11,7 +11,7 @@ import '../widgets/custom_button.dart';
 class CategoryDetailsScreen extends StatefulWidget {
   final Category category;
   
-  const CategoryDetailsScreen({Key? key, required this.category}) : super(key: key);
+  const CategoryDetailsScreen({super.key, required this.category});
   
   @override
   _CategoryDetailsScreenState createState() => _CategoryDetailsScreenState();

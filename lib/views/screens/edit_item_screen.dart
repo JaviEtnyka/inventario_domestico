@@ -187,7 +187,7 @@ class _EditItemScreenState extends State<EditItemScreen> {
                     value: category.id,
                     child: Text(category.name),
                   );
-                }).toList(),
+                }),
               ],
               onChanged: (value) {
                 setState(() {
@@ -216,7 +216,7 @@ class _EditItemScreenState extends State<EditItemScreen> {
                     value: location.id,
                     child: Text(location.name),
                   );
-                }).toList(),
+                }),
               ],
               onChanged: (value) {
                 setState(() {

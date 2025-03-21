@@ -11,14 +11,14 @@ class CustomCard extends StatelessWidget {
   final BorderRadius? borderRadius; // Cambiado de BorderRadiusGeometry a BorderRadius
   
   const CustomCard({
-    Key? key,
+    super.key,
     required this.child,
     this.padding,
     this.onTap,
     this.color,
     this.elevation,
     this.borderRadius,
-  }) : super(key: key);
+  });
   
   @override
   Widget build(BuildContext context) {
@@ -61,13 +61,13 @@ class InfoCard extends StatelessWidget {
   final VoidCallback? onTap;
   
   const InfoCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.value,
     required this.icon,
     this.iconColor,
     this.onTap,
-  }) : super(key: key);
+  });
   
   @override
   Widget build(BuildContext context) {
@@ -125,12 +125,12 @@ class StatusCard extends StatelessWidget {
   final Color color;
   
   const StatusCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.value,
     required this.icon,
     required this.color,
-  }) : super(key: key);
+  });
   
   @override
   Widget build(BuildContext context) {

@@ -6,7 +6,7 @@ import '../../config/app_theme.dart';
 import 'category_details_screen.dart';
 
 class CategoriesScreen extends StatefulWidget {
-  const CategoriesScreen({Key? key}) : super(key: key);
+  const CategoriesScreen({super.key});
 
   @override
   _CategoriesScreenState createState() => _CategoriesScreenState();

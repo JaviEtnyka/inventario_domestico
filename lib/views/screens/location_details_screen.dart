@@ -11,7 +11,7 @@ import '../widgets/custom_button.dart';
 class LocationDetailsScreen extends StatefulWidget {
   final Location location;
   
-  const LocationDetailsScreen({Key? key, required this.location}) : super(key: key);
+  const LocationDetailsScreen({super.key, required this.location});
   
   @override
   _LocationDetailsScreenState createState() => _LocationDetailsScreenState();

@@ -13,7 +13,7 @@ class CustomButton extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   
   const CustomButton({
-    Key? key,
+    super.key,
     required this.text,
     this.icon,
     required this.onPressed,
@@ -22,7 +22,7 @@ class CustomButton extends StatelessWidget {
     this.isFullWidth = true,
     this.height,
     this.padding,
-  }) : super(key: key);
+  });
   
   @override
   Widget build(BuildContext context) {
@@ -88,13 +88,13 @@ class ActionButton extends StatelessWidget {
   final double size;
   
   const ActionButton({
-    Key? key,
+    super.key,
     required this.icon,
     required this.onPressed,
     this.color,
     this.tooltip,
     this.size = 36,
-  }) : super(key: key);
+  });
   
   @override
   Widget build(BuildContext context) {
@@ -138,14 +138,14 @@ class FloatingActionIconButton extends StatelessWidget {
   final String? tooltip;
   
   const FloatingActionIconButton({
-    Key? key,
+    super.key,
     required this.icon,
     required this.onPressed,
     this.backgroundColor,
     this.iconColor,
     this.size = 56,
     this.tooltip,
-  }) : super(key: key);
+  });
   
   @override
   Widget build(BuildContext context) {

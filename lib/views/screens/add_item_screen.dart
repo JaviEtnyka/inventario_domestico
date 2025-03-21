@@ -163,7 +163,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                     value: category.id,
                     child: Text(category.name),
                   );
-                }).toList(),
+                }),
               ],
               onChanged: (value) {
                 setState(() {
@@ -198,7 +198,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                     value: location.id,
                     child: Text(location.name),
                   );
-                }).toList(),
+                }),
               ],
               onChanged: (value) {
                 setState(() {

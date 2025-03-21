@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'views/screens/home_screen.dart';
-import 'config/app_theme.dart';
 import 'providers/theme_provider.dart';
 import 'providers/language_provider.dart';
 import 'services/preferences_service.dart';

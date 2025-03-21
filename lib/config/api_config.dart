@@ -1,7 +1,7 @@
 // config/api_config.dart
 class ApiConfig {
   // Cambiar a la dirección de tu servidor PHP
-  static const String baseUrl = 'http://rek-internova.com/inventario-api/api';
+  static const String baseUrl = 'https://rek-internova.com/inventario-api/api';
   
   // Endpoints de items
   static const String itemsEndpoint = '$baseUrl/items';
@@ -28,6 +28,6 @@ class ApiConfig {
   static const String deleteLocation = '$locationsEndpoint/delete.php';
   
   // Endpoints de imágenes
-  static const String uploadImage = 'http://rek-internova.com/inventario-api/api/upload.php';
-  static const String uploadMultipleImages = 'http://rek-internova.com/inventario-api/api/upload-multiple.php';
+  static const String uploadImage = 'https://rek-internova.com/inventario-api/api/upload.php';
+  static const String uploadMultipleImages = 'https://rek-internova.com/inventario-api/api/upload-multiple.php';
 }

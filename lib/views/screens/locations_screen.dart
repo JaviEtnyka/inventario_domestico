@@ -6,7 +6,7 @@ import '../../config/app_theme.dart';
 import 'location_details_screen.dart';
 
 class LocationsScreen extends StatefulWidget {
-  const LocationsScreen({Key? key}) : super(key: key);
+  const LocationsScreen({super.key});
 
   @override
   _LocationsScreenState createState() => _LocationsScreenState();
