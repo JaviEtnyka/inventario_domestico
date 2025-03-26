@@ -1,7 +1,12 @@
 // views/screens/add_location_screen.dart
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../../controllers/location_controller.dart';
 import '../../models/location.dart';
+import '../../services/api_service.dart';
+import '../../services/image_service.dart';
+import '../widgets/image_picker_widget.dart';
+import '../../config/app_theme.dart';
 
 class AddLocationScreen extends StatefulWidget {
   const AddLocationScreen({super.key});
@@ -16,6 +21,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
   
   String _name = '';
   String _description = '';
+  List<File> _imageFiles = [];
   
   bool _isLoading = false;
   
@@ -70,6 +76,26 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                     ),
                     const SizedBox(height: 24),
                     
+                    // Selector de imágenes
+                    const Text(
+                      'Imágenes de la ubicación',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ImagePickerWidget(
+                      images: _imageFiles,
+                      onImagesChanged: (images) {
+                        setState(() {
+                          _imageFiles = images;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 32),
+                    
                     // Botón de guardar
                     ElevatedButton.icon(
                       onPressed: _saveLocation,
@@ -100,20 +126,31 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
       });
       
       try {
-        // Verificar conexión al servidor (opcional)
-        /* 
-        bool isConnected = await ApiService.checkApiConnection();
-        if (!isConnected) {
-          throw Exception('No se puede conectar al servidor. Verifica tu conexión.');
+        // Procesar imágenes si hay
+        List<String> imageUrls = [];
+        
+        if (_imageFiles.isNotEmpty) {
+          // Optimizar imágenes antes de subirlas
+          List<File> optimizedImages = await ImageService.optimizeImages(_imageFiles);
+          
+          // Subir las imágenes
+          imageUrls = await ApiService.uploadMultipleImages(optimizedImages);
         }
-        */
         
         final location = Location(
           name: _name,
           description: _description,
+          imageUrls: imageUrls.isEmpty ? null : imageUrls,
         );
         
         await _locationController.createLocation(location);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ubicación guardada correctamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
         
         Navigator.pop(context, true);
       } catch (e) {

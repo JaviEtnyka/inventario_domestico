@@ -28,6 +28,28 @@ class _LocationsScreenState extends State<LocationsScreen> with AutomaticKeepAli
     _loadLocations();
   }
   
+  // Mover la función getLocationIcon a nivel de clase
+  IconData getLocationIcon(String name) {
+    name = name.toLowerCase();
+    if (name.contains('sala') || name.contains('salón')) {
+      return Icons.weekend;
+    } else if (name.contains('cocina')) {
+      return Icons.kitchen;
+    } else if (name.contains('baño')) {
+      return Icons.bathtub;
+    } else if (name.contains('dormitorio') || name.contains('habitación')) {
+      return Icons.bed;
+    } else if (name.contains('garaje')) {
+      return Icons.garage;
+    } else if (name.contains('jardín') || name.contains('terraza')) {
+      return Icons.deck;
+    } else if (name.contains('oficina') || name.contains('despacho')) {
+      return Icons.business_center;
+    } else {
+      return Icons.place;
+    }
+  }
+  
   Future<void> _loadLocations() async {
     setState(() {
       _isLoading = true;
@@ -36,6 +58,12 @@ class _LocationsScreenState extends State<LocationsScreen> with AutomaticKeepAli
     
     try {
       _locationsFuture = _locationController.getAllLocations();
+      // Depuración para mostrar las ubicaciones e imágenes
+      _locationsFuture.then((locations) {
+        for (var location in locations) {
+          print('Ubicación ${location.name} - imageUrls: ${location.imageUrls}');
+        }
+      });
     } catch (e) {
       setState(() {
         _errorMessage = 'Error al cargar las ubicaciones: $e';
@@ -102,6 +130,7 @@ class _LocationsScreenState extends State<LocationsScreen> with AutomaticKeepAli
   }
   
   Widget _buildErrorView() {
+    // Código sin cambios
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -147,6 +176,7 @@ class _LocationsScreenState extends State<LocationsScreen> with AutomaticKeepAli
   }
   
   Widget _buildLocationList() {
+    // Código sin cambios
     return RefreshIndicator(
       onRefresh: () async {
         await _loadLocations();
@@ -227,27 +257,8 @@ class _LocationsScreenState extends State<LocationsScreen> with AutomaticKeepAli
   }
   
   Widget _buildLocationListItem(Location location) {
-    // Iconos para diferentes tipos de ubicaciones
-    IconData getLocationIcon(String name) {
-      name = name.toLowerCase();
-      if (name.contains('sala') || name.contains('salón')) {
-        return Icons.weekend;
-      } else if (name.contains('cocina')) {
-        return Icons.kitchen;
-      } else if (name.contains('baño')) {
-        return Icons.bathtub;
-      } else if (name.contains('dormitorio') || name.contains('habitación')) {
-        return Icons.bed;
-      } else if (name.contains('garaje')) {
-        return Icons.garage;
-      } else if (name.contains('jardín') || name.contains('terraza')) {
-        return Icons.deck;
-      } else if (name.contains('oficina') || name.contains('despacho')) {
-        return Icons.business_center;
-      } else {
-        return Icons.place;
-      }
-    }
+    // Verificar si la ubicación tiene imágenes
+    bool hasImages = location.imageUrls != null && location.imageUrls!.isNotEmpty;
     
     return GestureDetector(
       onTap: () {
@@ -277,76 +288,172 @@ class _LocationsScreenState extends State<LocationsScreen> with AutomaticKeepAli
             ),
           ],
         ),
-        child: Row(
-          children: [
-            // Icono
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: AppTheme.locationColor.withOpacity(0.1),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                ),
-              ),
-              child: Center(
-                child: Icon(
-                  getLocationIcon(location.name),
-                  color: AppTheme.locationColor,
-                  size: 36,
-                ),
-              ),
-            ),
-            
-            // Información
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      location.name,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimaryColor,
-                      ),
-                    ),
-                    
-                    if (location.description.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        location.description,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppTheme.textSecondaryColor,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            
-            // Flecha
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Icon(
-                Icons.chevron_right,
-                color: AppTheme.locationColor,
-              ),
-            ),
-          ],
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: hasImages
+              ? _buildLocationItemWithImage(location)
+              : _buildLocationItemWithIcon(location),
         ),
       ),
     );
   }
+
+  // Construir item con imagen
+  Widget _buildLocationItemWithImage(Location location) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Imagen de la ubicación
+        Stack(
+          children: [
+            // Imagen
+            SizedBox(
+              height: 140,
+              width: double.infinity,
+              child: Image.network(
+                location.imageUrls!.first,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  print('Error al cargar imagen: $error');
+                  return Container(
+                    color: AppTheme.locationColor.withOpacity(0.1),
+                    child: Center(
+                      child: Icon(
+                        Icons.image_not_supported,
+                        color: AppTheme.locationColor.withOpacity(0.5),
+                        size: 36,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            
+            // Gradiente
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.7),
+                    ],
+                    stops: const [0.6, 1.0],
+                  ),
+                ),
+              ),
+            ),
+            
+            // Nombre en la imagen
+            Positioned(
+              bottom: 12,
+              left: 12,
+              right: 12,
+              child: Text(
+                location.name,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        
+        // Descripción
+        if (location.description.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              location.description,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppTheme.textSecondaryColor,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+      ],
+    );
+  }
+
+  // Construir item con icono
+  Widget _buildLocationItemWithIcon(Location location) {
+    return Row(
+      children: [
+        // Icono
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            color: AppTheme.locationColor.withOpacity(0.1),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              bottomLeft: Radius.circular(16),
+            ),
+          ),
+          child: Center(
+            child: Icon(
+              getLocationIcon(location.name),
+              color: AppTheme.locationColor,
+              size: 36,
+            ),
+          ),
+        ),
+        
+        // Información
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  location.name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimaryColor,
+                  ),
+                ),
+                
+                if (location.description.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    location.description,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.textSecondaryColor,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        
+        // Flecha
+        const Padding(
+          padding: EdgeInsets.all(16),
+          child: Icon(
+            Icons.chevron_right,
+            color: AppTheme.locationColor,
+          ),
+        ),
+      ],
+    );
+  }
   
   Widget _buildEmptyState() {
+    // Código sin cambios
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

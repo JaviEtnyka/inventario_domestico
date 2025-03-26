@@ -1,8 +1,11 @@
-// controllers/item_controller.dart (corregido)
+// controllers/item_controller.dart
 import 'dart:io';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../models/item.dart';
 import '../services/api_service.dart';
 import '../services/image_service.dart';
+import '../config/api_config.dart';
 
 class ItemController {
   // Obtener todos los items
@@ -85,91 +88,95 @@ class ItemController {
   // Crear un nuevo item con imágenes
   Future<int> createItem(Item item, List<File> imageFiles) async {
     try {
-      // Evitar procesar si no hay imágenes
-      if (imageFiles.isEmpty) {
-        return await ApiService.createItem(item);
-      }
+      // Primero, si hay imágenes, subir y obtener URLs
+      List<String> imageUrls = [];
       
-      // Optimizar imágenes antes de subirlas
-      List<File> optimizedImages = [];
-      for (var file in imageFiles) {
+      if (imageFiles.isNotEmpty) {
         try {
-          File optimized = await ImageService.optimizeImage(file);
-          optimizedImages.add(optimized);
-        } catch (e) {
-          print('Error optimizando imagen: $e');
-          // Si falla la optimización, usar la original
-          optimizedImages.add(file);
+          // Optimiza imágenes para reducir su tamaño
+          List<File> optimizedImages = await ImageService.optimizeImages(imageFiles);
+          
+          // Intenta subir imágenes
+          imageUrls = await ApiService.uploadMultipleImages(optimizedImages);
+          print('URLs de imágenes obtenidas: $imageUrls');
+        } catch (imageError) {
+          print('Error al subir imágenes: $imageError');
+          // Continuar sin imágenes en caso de error
         }
       }
       
-      // Subir imágenes
-      List<String> imageUrls = await ApiService.uploadMultipleImages(optimizedImages);
-      
-      // Crear una copia del item con las URLs de las imágenes
+      // Crear copia del ítem con URLs de imágenes
       final itemWithImages = Item(
         name: item.name,
         description: item.description,
         value: item.value,
         categoryId: item.categoryId,
         locationId: item.locationId,
-        imageUrls: imageUrls.join(','),
+        imageUrls: imageUrls.join(','), // Unir URLs con coma
       );
       
-      // Crear el item
+      // Imprimir JSON para depuración
+      print('Item a guardar: ${json.encode(itemWithImages.toJson())}');
+      
+      // Crear ítem
       return await ApiService.createItem(itemWithImages);
     } catch (e) {
       print('Error en createItem: $e');
-      // Para modo de desarrollo, devolvemos un ID falso
-      return -1;
+      rethrow;
     }
   }
   
   // Actualizar un item existente
-Future<void> updateItem(Item item, List<File> newImageFiles) async {
-  try {
-    // Diagnóstico de endpoints (nuevo código)
-    await ApiService.diagnoseSeverUploadEndpoints();
-
-    // Lista de todas las URLs de imágenes existentes
-    List<String> allImageUrls = item.getImageUrlsList();
-    
-    // Si hay nuevas imágenes, optimizarlas y subirlas
-    if (newImageFiles.isNotEmpty) {
-      List<File> optimizedImages = [];
-      for (var file in newImageFiles) {
-        try {
-          File optimized = await ImageService.optimizeImage(file);
-          optimizedImages.add(optimized);
-        } catch (e) {
-          print('Error optimizando imagen: $e');
-          optimizedImages.add(file);
+  Future<void> updateItem(Item item, List<File> newImageFiles, {List<String> imagesToDelete = const []}) async {
+    try {
+      // Si hay imágenes para eliminar, procesarlas primero
+      if (imagesToDelete.isNotEmpty) {
+        for (String imageUrl in imagesToDelete) {
+          try {
+            await deleteImage(imageUrl);
+          } catch (e) {
+            print('Error al eliminar imagen $imageUrl: $e');
+            // Continuamos incluso si falla una eliminación
+          }
         }
       }
       
-      final newImageUrls = await ApiService.uploadMultipleImages(optimizedImages);
-      allImageUrls.addAll(newImageUrls);
+      // Filtrar las URLs de imágenes existentes que no están marcadas para eliminar
+      List<String> remainingImageUrls = item.getImageUrlsList()
+          .where((url) => !imagesToDelete.contains(url))
+          .toList();
+      
+      // Si hay nuevas imágenes, optimizarlas y subirlas
+      if (newImageFiles.isNotEmpty) {
+        try {
+          List<File> optimizedImages = await ImageService.optimizeImages(newImageFiles);
+          final newImageUrls = await ApiService.uploadMultipleImages(optimizedImages);
+          remainingImageUrls.addAll(newImageUrls);
+        } catch (e) {
+          print('Error al procesar nuevas imágenes: $e');
+          // Continuamos con las imágenes que se hayan podido procesar
+        }
+      }
+      
+      // Crear una copia del item con las URLs de imágenes actualizadas
+      final itemWithImages = Item(
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        value: item.value,
+        purchaseDate: item.purchaseDate,
+        categoryId: item.categoryId,
+        locationId: item.locationId,
+        imageUrls: remainingImageUrls.join(','),
+      );
+      
+      // Actualizar el item
+      await ApiService.updateItem(itemWithImages);
+    } catch (e) {
+      print('Error en updateItem: $e');
+      rethrow;
     }
-    
-    // Crear una copia del item con todas las URLs de las imágenes
-    final itemWithImages = Item(
-      id: item.id,
-      name: item.name,
-      description: item.description,
-      value: item.value,
-      purchaseDate: item.purchaseDate,
-      categoryId: item.categoryId,
-      locationId: item.locationId,
-      imageUrls: allImageUrls.join(','),
-    );
-    
-    // Actualizar el item
-    await ApiService.updateItem(itemWithImages);
-  } catch (e) {
-    print('Error en updateItem: $e');
-    rethrow;
   }
-}
   
   // Eliminar un item
   Future<void> deleteItem(int id) async {
@@ -234,6 +241,28 @@ Future<void> updateItem(Item item, List<File> newImageFiles) async {
     } catch (e) {
       print('Error en getTotalInventoryValue: $e');
       return 0.0;
+    }
+  }
+
+  // Elimina una imagen del servidor
+  static Future<bool> deleteImage(String imageUrl) async {
+    try {
+      print('🗑️ Eliminando imagen: $imageUrl');
+      
+      final response = await http.post(
+        Uri.parse(ApiConfig.deleteImage),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'imageUrl': imageUrl})
+      ).timeout(const Duration(seconds: 15));
+      
+      print('📡 Respuesta de eliminación:');
+      print('   - Código: ${response.statusCode}');
+      print('   - Cuerpo: ${response.body}');
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      print('❌ Error al eliminar imagen: $e');
+      return false;
     }
   }
 }

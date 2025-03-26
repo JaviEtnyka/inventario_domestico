@@ -28,6 +28,7 @@ class ApiConfig {
   static const String deleteLocation = '$locationsEndpoint/delete.php';
   
   // Endpoints de imágenes
-  static const String uploadImage = 'https://rek-internova.com/inventario-api/api/upload.php';
-  static const String uploadMultipleImages = 'https://rek-internova.com/inventario-api/api/upload-multiple.php';
+  static const String uploadImage = 'https://rek-internova.com/inventario-api/uploads/upload.php';
+  static const String uploadMultipleImages = 'https://rek-internova.com/inventario-api/uploads/upload-multiple.php';
+  static const String deleteImage = 'https://rek-internova.com/inventario-api/uploads/delete-image.php';
 }

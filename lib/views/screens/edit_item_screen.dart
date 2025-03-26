@@ -2,12 +2,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
+import 'dart:convert';
 import '../../controllers/item_controller.dart';
 import '../../controllers/category_controller.dart';
 import '../../controllers/location_controller.dart';
 import '../../models/item.dart';
 import '../../models/category.dart';
 import '../../models/location.dart';
+import '../../services/image_service.dart';
+import '../../services/api_service.dart';
 import '../widgets/image_picker_widget.dart';
 
 class EditItemScreen extends StatefulWidget {
@@ -24,6 +27,8 @@ class _EditItemScreenState extends State<EditItemScreen> {
   final ItemController _itemController = ItemController();
   final CategoryController _categoryController = CategoryController();
   final LocationController _locationController = LocationController();
+  List<String> _imagesToDelete = [];
+  List<String> _currentImages = [];
   
   late String _name;
   late String _description;
@@ -38,18 +43,19 @@ class _EditItemScreenState extends State<EditItemScreen> {
   bool _isLoading = false;
   String _errorMessage = '';
   
-  @override
-  void initState() {
-    super.initState();
-    // Inicializar con los valores del item
-    _name = widget.item.name;
-    _description = widget.item.description;
-    _value = widget.item.value;
-    _categoryId = widget.item.categoryId;
-    _locationId = widget.item.locationId;
-    
-    _loadCategoriesAndLocations();
-  }
+ @override
+void initState() {
+  super.initState();
+  // Inicializar con los valores del item
+  _name = widget.item.name;
+  _description = widget.item.description;
+  _value = widget.item.value;
+  _categoryId = widget.item.categoryId;
+  _locationId = widget.item.locationId;
+  _currentImages = widget.item.getImageUrlsList();
+  
+  _loadCategoriesAndLocations();
+}
   
   Future<void> _loadCategoriesAndLocations() async {
     setState(() {
@@ -284,69 +290,176 @@ class _EditItemScreenState extends State<EditItemScreen> {
   }
   
   Widget _buildExistingImages() {
-    List<String> imageUrls = widget.item.getImageUrlsList();
-    
-    return SizedBox(
-      height: 120,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: imageUrls.length,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                imageUrls[index],
-                width: 120,
-                height: 120,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text(
+        'Imágenes actuales:',
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      const SizedBox(height: 8),
+      SizedBox(
+        height: 120,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: _currentImages.length,
+          itemBuilder: (context, index) {
+            final imageUrl = _currentImages[index];
+            final isMarkedForDeletion = _imagesToDelete.contains(imageUrl);
+            
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Stack(
+                children: [
+                  // Imagen
+                  Container(
                     width: 120,
                     height: 120,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.broken_image),
-                  );
-                },
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isMarkedForDeletion ? Colors.red : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: isMarkedForDeletion 
+                          ? ColorFiltered(
+                              colorFilter: const ColorFilter.mode(
+                                Colors.grey,
+                                BlendMode.saturation,
+                              ),
+                              child: Image.network(
+                                imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: Colors.grey[300],
+                                    child: const Icon(Icons.broken_image),
+                                  );
+                                },
+                              ),
+                            )
+                          : Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.broken_image),
+                                );
+                              },
+                            ),
+                    ),
+                  ),
+                  
+                  // Botón de eliminar
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          if (isMarkedForDeletion) {
+                            _imagesToDelete.remove(imageUrl);
+                          } else {
+                            _imagesToDelete.add(imageUrl);
+                          }
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: isMarkedForDeletion ? Colors.blue : Colors.red,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          isMarkedForDeletion ? Icons.undo : Icons.delete,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
-    );
-  }
+      if (_imagesToDelete.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Text(
+            '${_imagesToDelete.length} ${_imagesToDelete.length == 1 ? 'imagen marcada' : 'imágenes marcadas'} para eliminar',
+            style: const TextStyle(color: Colors.red, fontStyle: FontStyle.italic),
+          ),
+        ),
+    ],
+  );
+}
   
-  Future<void> _updateItem() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-      
-      setState(() {
-        _isLoading = true;
-        _errorMessage = '';
-      });
-      
-      try {
-        final updatedItem = Item(
-          id: widget.item.id,
-          name: _name,
-          description: _description,
-          value: _value,
-          categoryId: _categoryId,
-          locationId: _locationId,
-          imageUrls: widget.item.imageUrls,
-        );
-        
-        await _itemController.updateItem(updatedItem, _newImageFiles);
-        
-        // Volver a la pantalla anterior con resultado positivo
-        Navigator.pop(context, true);
-      } catch (e) {
-        setState(() {
-          _errorMessage = 'Error al actualizar el item: ${e.toString()}';
-          _isLoading = false;
-        });
+ Future<void> _updateItem() async {
+  if (_formKey.currentState!.validate()) {
+    _formKey.currentState!.save();
+    
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+    
+    try {
+      // Primero eliminamos las imágenes marcadas para eliminar
+      if (_imagesToDelete.isNotEmpty) {
+        for (String imageUrl in _imagesToDelete) {
+          await ApiService.deleteImage(imageUrl);
+        }
       }
+      
+      // Filtrar las URLs de imágenes que no están marcadas para eliminar
+      List<String> remainingImages = _currentImages
+          .where((url) => !_imagesToDelete.contains(url))
+          .toList();
+      
+      // Subir nuevas imágenes si hay
+      List<String> newImageUrls = [];
+      if (_newImageFiles.isNotEmpty) {
+        try {
+          List<File> optimizedImages = await ImageService.optimizeImages(_newImageFiles);
+          newImageUrls = await ApiService.uploadMultipleImages(optimizedImages);
+        } catch (e) {
+          print('Error al subir nuevas imágenes: $e');
+          // Continuamos aunque falle la subida de nuevas imágenes
+        }
+      }
+      
+      // Combinar imágenes restantes con nuevas imágenes
+      final allImageUrls = [...remainingImages, ...newImageUrls];
+      
+      final updatedItem = Item(
+        id: widget.item.id,
+        name: _name,
+        description: _description,
+        value: _value,
+        categoryId: _categoryId,
+        locationId: _locationId,
+        imageUrls: allImageUrls.join(','),
+      );
+      
+      await _itemController.updateItem(updatedItem, []);
+      
+      // Volver a la pantalla anterior con resultado positivo
+      Navigator.pop(context, true);
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error al actualizar el item: ${e.toString()}';
+        _isLoading = false;
+      });
     }
   }
+}
 }

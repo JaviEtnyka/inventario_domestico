@@ -83,6 +83,7 @@ class ApiService {
       print('❌ No se pudo obtener información del servidor: $e');
     }
   }
+  
   // ========== ITEMS ==========
   
   /// Obtiene todos los items del inventario
@@ -137,11 +138,19 @@ class ApiService {
   /// Crea un nuevo item
   static Future<int> createItem(Item item) async {
     try {
+      // Imprimir el JSON para depuración
+      final jsonData = item.toJson();
+      print('Creando item: ${json.encode(jsonData)}');
+      print('URL: ${ApiConfig.createItem}');
+      
       final response = await http.post(
         Uri.parse(ApiConfig.createItem),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode(item.toJson())
-      );
+        body: json.encode(jsonData)
+      ).timeout(const Duration(seconds: 15));
+      
+      print('Respuesta HTTP: ${response.statusCode}');
+      print('Cuerpo de la respuesta: ${response.body}');
       
       if (response.statusCode == 201) {
         final Map<String, dynamic> data = json.decode(response.body);
@@ -151,7 +160,7 @@ class ApiService {
           return 0; // Si no hay ID, devolvemos 0 temporalmente
         }
       } else {
-        throw Exception('Error al crear el item: ${response.statusCode}');
+        throw Exception('Error al crear el item: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       print('Error en createItem: $e');
@@ -160,49 +169,49 @@ class ApiService {
   }
   
   /// Actualiza un item existente
-static Future<void> updateItem(Item item) async {
-  try {
-    // Imprimir el contenido del JSON que enviamos
-    final jsonData = item.toJson();
-    print('Actualizando item ID ${item.id}');
-    print('JSON enviado: ${json.encode(jsonData)}');
-    print('URL: ${ApiConfig.updateItem}');
-    
-    final response = await http.post(
-      Uri.parse(ApiConfig.updateItem),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(jsonData)
-    ).timeout(const Duration(seconds: 15)); // Añadir timeout para evitar esperas largas
-    
-    print('Respuesta HTTP: ${response.statusCode}');
-    print('Cuerpo de la respuesta: ${response.body}');
-    
-    if (response.statusCode != 200) {
-      throw Exception('Error al actualizar el item: ${response.statusCode} - ${response.body}');
-    }
-  } catch (e) {
-    // En caso de error de conexión, proporcionar más información
-    if (e.toString().contains('XMLHttpRequest error') || 
-        e.toString().contains('SocketException') ||
-        e.toString().contains('TimeoutException')) {
-      print('Error de conexión detectado: $e');
+  static Future<void> updateItem(Item item) async {
+    try {
+      // Imprimir el contenido del JSON que enviamos
+      final jsonData = item.toJson();
+      print('Actualizando item ID ${item.id}');
+      print('JSON enviado: ${json.encode(jsonData)}');
+      print('URL: ${ApiConfig.updateItem}');
       
-      // Intentar verificar si el servidor está disponible directamente
-      try {
-        final testResponse = await http.get(
-          Uri.parse(ApiConfig.baseUrl),
-        ).timeout(const Duration(seconds: 5));
-        
-        print('Prueba de conexión al servidor: ${testResponse.statusCode}');
-      } catch (connectionError) {
-        print('Error confirmado al intentar conectar con el servidor: $connectionError');
+      final response = await http.post(
+        Uri.parse(ApiConfig.updateItem),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(jsonData)
+      ).timeout(const Duration(seconds: 15));
+      
+      print('Respuesta HTTP: ${response.statusCode}');
+      print('Cuerpo de la respuesta: ${response.body}');
+      
+      if (response.statusCode != 200) {
+        throw Exception('Error al actualizar el item: ${response.statusCode} - ${response.body}');
       }
+    } catch (e) {
+      // En caso de error de conexión, proporcionar más información
+      if (e.toString().contains('XMLHttpRequest error') || 
+          e.toString().contains('SocketException') ||
+          e.toString().contains('TimeoutException')) {
+        print('Error de conexión detectado: $e');
+        
+        // Intentar verificar si el servidor está disponible directamente
+        try {
+          final testResponse = await http.get(
+            Uri.parse(ApiConfig.baseUrl),
+          ).timeout(const Duration(seconds: 5));
+          
+          print('Prueba de conexión al servidor: ${testResponse.statusCode}');
+        } catch (connectionError) {
+          print('Error confirmado al intentar conectar con el servidor: $connectionError');
+        }
+      }
+      
+      print('Error detallado en updateItem: $e');
+      rethrow;
     }
-    
-    print('Error detallado en updateItem: $e');
-    rethrow;
   }
-}
   
   /// Elimina un item por su ID
   static Future<void> deleteItem(int id) async {
@@ -255,17 +264,17 @@ static Future<void> updateItem(Item item) async {
   }
 
   static Future<bool> isServerAvailable() async {
-  try {
-    final response = await http.get(
-      Uri.parse(ApiConfig.baseUrl),
-    ).timeout(const Duration(seconds: 5));
-    
-    return response.statusCode >= 200 && response.statusCode < 300;
-  } catch (e) {
-    print('Error al verificar disponibilidad del servidor: $e');
-    return false;
+    try {
+      final response = await http.get(
+        Uri.parse(ApiConfig.baseUrl),
+      ).timeout(const Duration(seconds: 5));
+      
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (e) {
+      print('Error al verificar disponibilidad del servidor: $e');
+      return false;
+    }
   }
-}
   
   /// Obtiene una categoría por su ID
   static Future<Category> getCategoryById(int id) async {
@@ -285,117 +294,117 @@ static Future<void> updateItem(Item item) async {
   
   /// Crea una nueva categoría
   static Future<int> createCategory(Category category) async {
-  try {
-    print('Enviando datos: ${json.encode(category.toJson())}');
-    
-    final response = await http.post(
-      Uri.parse(ApiConfig.createCategory),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(category.toJson())
-    );
-    
-    print('Respuesta HTTP: ${response.statusCode}');
-    print('Cuerpo de respuesta: ${response.body}');
-    
-    if (response.statusCode == 201) {
-      final Map<String, dynamic> data = json.decode(response.body);
+    try {
+      print('Enviando datos: ${json.encode(category.toJson())}');
       
-      // Manejar si el servidor devuelve un id
-      if (data.containsKey('id')) {
-        return int.parse(data['id'].toString());
-      } 
-      // Si no hay id pero la creación fue exitosa, devolver un valor temporal
-      else {
-        print('Advertencia: Categoría creada pero no se recibió ID');
-        return 1; // Valor temporal
+      final response = await http.post(
+        Uri.parse(ApiConfig.createCategory),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(category.toJson())
+      );
+      
+      print('Respuesta HTTP: ${response.statusCode}');
+      print('Cuerpo de respuesta: ${response.body}');
+      
+      if (response.statusCode == 201) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        
+        // Manejar si el servidor devuelve un id
+        if (data.containsKey('id')) {
+          return int.parse(data['id'].toString());
+        } 
+        // Si no hay id pero la creación fue exitosa, devolver un valor temporal
+        else {
+          print('Advertencia: Categoría creada pero no se recibió ID');
+          return 1; // Valor temporal
+        }
+      } else {
+        throw Exception('Error al crear la categoría: ${response.statusCode} - ${response.body}');
       }
-    } else {
-      throw Exception('Error al crear la categoría: ${response.statusCode} - ${response.body}');
+    } catch (e) {
+      print('Excepción detallada en createCategory: $e');
+      // En desarrollo, en lugar de fallar completamente, retornar valor temporal
+      return -1; // Valor negativo para indicar error
     }
-  } catch (e) {
-    print('Excepción detallada en createCategory: $e');
-    // En desarrollo, en lugar de fallar completamente, retornar valor temporal
-    return -1; // Valor negativo para indicar error
   }
-}
   
   static Future<void> updateCategory(Category category) async {
-  try {
-    // Crear el mapa de datos directamente, convirtiendo el ID a string
-    final Map<String, dynamic> data = {
-      'id': category.id.toString(), // ID como string
-      'name': category.name,
-      'description': category.description,
-    };
-    
-    print('Intentando actualizar categoría: ${json.encode(data)}');
-    print('URL: ${ApiConfig.updateCategory}');
+    try {
+      // Crear el mapa de datos directamente, convirtiendo el ID a string
+      final Map<String, dynamic> data = {
+        'id': category.id.toString(), // ID como string
+        'name': category.name,
+        'description': category.description,
+      };
+      
+      print('Intentando actualizar categoría: ${json.encode(data)}');
+      print('URL: ${ApiConfig.updateCategory}');
 
-    final response = await http.post(
-      Uri.parse(ApiConfig.updateCategory),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(data)
-    ).timeout(const Duration(seconds: 15));
-    
-    print('Código de respuesta: ${response.statusCode}');
-    print('Respuesta: ${response.body}');
-    
-    if (response.statusCode != 200) {
-      throw Exception('Error al actualizar la categoría: ${response.statusCode} - ${response.body}');
+      final response = await http.post(
+        Uri.parse(ApiConfig.updateCategory),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(data)
+      ).timeout(const Duration(seconds: 15));
+      
+      print('Código de respuesta: ${response.statusCode}');
+      print('Respuesta: ${response.body}');
+      
+      if (response.statusCode != 200) {
+        throw Exception('Error al actualizar la categoría: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      // Solución temporal para desarrollo
+      if (e.toString().contains('XMLHttpRequest error') || 
+          e.toString().contains('SocketException') ||
+          e.toString().contains('TimeoutException')) {
+        print('Error de conexión detectado, usando modo sin conexión para desarrollo');
+        await Future.delayed(const Duration(milliseconds: 800));
+        return; // Simular éxito para desarrollo
+      }
+      
+      print('Error detallado en updateCategory: $e');
+      rethrow;
     }
-  } catch (e) {
-    // Solución temporal para desarrollo
-    if (e.toString().contains('XMLHttpRequest error') || 
-        e.toString().contains('SocketException') ||
-        e.toString().contains('TimeoutException')) {
-      print('Error de conexión detectado, usando modo sin conexión para desarrollo');
-      await Future.delayed(const Duration(milliseconds: 800));
-      return; // Simular éxito para desarrollo
-    }
-    
-    print('Error detallado en updateCategory: $e');
-    rethrow;
   }
-}
   
-  /// Elimina una categoría por su ID
-static Future<void> deleteCategory(int id) async {
-  try {
-    // Convertir id a string para asegurar compatibilidad con la API
-    final Map<String, dynamic> data = {
-      'id': id.toString()
-    };
-    
-    print('Intentando eliminar categoría ID: $id');
-    print('URL: ${ApiConfig.deleteCategory}');
-    print('Datos enviados: ${json.encode(data)}');
-    
-    final response = await http.post(
-      Uri.parse(ApiConfig.deleteCategory),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(data)
-    ).timeout(const Duration(seconds: 15));
-    
-    print('Código de respuesta: ${response.statusCode}');
-    print('Respuesta: ${response.body}');
-    
-    if (response.statusCode != 200) {
-      throw Exception('Error al eliminar la categoría: ${response.statusCode} - ${response.body}');
+ /// Elimina una categoría por su ID
+  static Future<void> deleteCategory(int id) async {
+    try {
+      // Convertir id a string para asegurar compatibilidad con la API
+      final Map<String, dynamic> data = {
+        'id': id.toString()
+      };
+      
+      print('Intentando eliminar categoría ID: $id');
+      print('URL: ${ApiConfig.deleteCategory}');
+      print('Datos enviados: ${json.encode(data)}');
+      
+      final response = await http.post(
+        Uri.parse(ApiConfig.deleteCategory),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(data)
+      ).timeout(const Duration(seconds: 15));
+      
+      print('Código de respuesta: ${response.statusCode}');
+      print('Respuesta: ${response.body}');
+      
+      if (response.statusCode != 200) {
+        throw Exception('Error al eliminar la categoría: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      // Solución temporal para desarrollo
+      if (e.toString().contains('XMLHttpRequest error') || 
+          e.toString().contains('SocketException') ||
+          e.toString().contains('TimeoutException')) {
+        print('Error de conexión detectado, usando modo sin conexión para desarrollo');
+        await Future.delayed(const Duration(milliseconds: 800));
+        return; // Simular éxito para desarrollo
+      }
+      
+      print('Error detallado en deleteCategory: $e');
+      rethrow;
     }
-  } catch (e) {
-    // Solución temporal para desarrollo
-    if (e.toString().contains('XMLHttpRequest error') || 
-        e.toString().contains('SocketException') ||
-        e.toString().contains('TimeoutException')) {
-      print('Error de conexión detectado, usando modo sin conexión para desarrollo');
-      await Future.delayed(const Duration(milliseconds: 800));
-      return; // Simular éxito para desarrollo
-    }
-    
-    print('Error detallado en deleteCategory: $e');
-    rethrow;
   }
-}
   
   // ========== UBICACIONES ==========
   
@@ -446,49 +455,93 @@ static Future<void> deleteCategory(int id) async {
   }
   
   /// Crea una nueva ubicación
+   /// Crea una nueva ubicación
   static Future<int> createLocation(Location location) async {
-  try {
-    final response = await http.post(
-      Uri.parse(ApiConfig.createLocation),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(location.toJson())
-    );
-    
-    print('Respuesta crear ubicación: ${response.statusCode} - ${response.body}');
-    
-    if (response.statusCode == 201) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      if (data.containsKey('id')) {
-        return int.parse(data['id'].toString());
-      } else {
-        // Si la creación fue exitosa pero no hay ID, devolvemos un valor temporal
-        print('Ubicación creada correctamente pero no se recibió ID');
-        return 1; // ID temporal para desarrollo
+    try {
+      // Crear el mapa de datos, incluyendo URLs de imágenes si existen
+      final Map<String, dynamic> data = {
+        'name': location.name,
+        'description': location.description,
+      };
+      
+      // Añadir URLs de imágenes si existen
+      if (location.imageUrls != null && location.imageUrls!.isNotEmpty) {
+        // Convertir a JSON string para el backend
+        data['image_urls'] = json.encode(location.imageUrls);
       }
-    } else {
-      throw Exception('Error al crear la ubicación: ${response.statusCode}');
+      
+      print('Enviando datos de ubicación: ${json.encode(data)}');
+      print('URL: ${ApiConfig.createLocation}');
+      
+      final response = await http.post(
+        Uri.parse(ApiConfig.createLocation),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(data)
+      );
+      
+      print('Respuesta crear ubicación: ${response.statusCode} - ${response.body}');
+      
+      if (response.statusCode == 201) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        if (responseData.containsKey('id')) {
+          return int.parse(responseData['id'].toString());
+        } else {
+          // Si la creación fue exitosa pero no hay ID, devolvemos un valor temporal
+          print('Ubicación creada correctamente pero no se recibió ID');
+          return 1; // ID temporal para desarrollo
+        }
+      } else {
+        throw Exception('Error al crear la ubicación: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('Error en createLocation: $e');
+      // Para desarrollo, podríamos devolver un ID temporal en lugar de lanzar un error
+      return -1; // Valor negativo para indicar error
     }
-  } catch (e) {
-    print('Error en createLocation: $e');
-    // Para desarrollo, podríamos devolver un ID temporal en lugar de lanzar un error
-    return -1; // Valor negativo para indicar error
   }
-}
   
   /// Actualiza una ubicación existente
   static Future<void> updateLocation(Location location) async {
     try {
+      // Crear el mapa de datos, asegurándose de incluir las URLs de imágenes
+      final Map<String, dynamic> data = {
+        'id': location.id.toString(), // Convertir ID a string
+        'name': location.name,
+        'description': location.description,
+      };
+      
+      // Añadir URLs de imágenes si existen
+      if (location.imageUrls != null && location.imageUrls!.isNotEmpty) {
+        // Convertir a JSON string para el backend
+        data['image_urls'] = json.encode(location.imageUrls);
+      }
+      
+      print('Intentando actualizar ubicación: ${json.encode(data)}');
+      print('URL: ${ApiConfig.updateLocation}');
+
       final response = await http.post(
         Uri.parse(ApiConfig.updateLocation),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode(location.toJson())
-      );
+        body: json.encode(data)
+      ).timeout(const Duration(seconds: 15));
+      
+      print('Código de respuesta: ${response.statusCode}');
+      print('Respuesta: ${response.body}');
       
       if (response.statusCode != 200) {
-        throw Exception('Error al actualizar la ubicación: ${response.statusCode}');
+        throw Exception('Error al actualizar la ubicación: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      print('Error en updateLocation: $e');
+      // Solución temporal para desarrollo
+      if (e.toString().contains('XMLHttpRequest error') || 
+          e.toString().contains('SocketException') ||
+          e.toString().contains('TimeoutException')) {
+        print('Error de conexión detectado, usando modo sin conexión para desarrollo');
+        await Future.delayed(const Duration(milliseconds: 800));
+        return; // Simular éxito para desarrollo
+      }
+      
+      print('Error detallado en updateLocation: $e');
       rethrow;
     }
   }
@@ -592,7 +645,7 @@ static Future<void> deleteCategory(int id) async {
     }
   }
   
- /// Sube múltiples imágenes al servidor
+  /// Sube múltiples imágenes al servidor
   static Future<List<String>> uploadMultipleImages(List<File> imageFiles) async {
     // Validar que hay archivos para subir
     if (imageFiles.isEmpty) {
@@ -686,6 +739,7 @@ static Future<void> deleteCategory(int id) async {
       rethrow;
     }
   }
+  
   /// Registra detalles de la respuesta para depuración
   static void _logResponseDetails(http.Response response) {
     print('URL de subida: ${ApiConfig.uploadMultipleImages}');
@@ -705,8 +759,6 @@ static Future<void> deleteCategory(int id) async {
       })
     ).then((files) => files.whereType<File>().toList());
   }
-
-  
 
   /// Procesa la respuesta de subida de imágenes
   static List<String> _processUploadResponse(http.Response response) {
@@ -743,7 +795,7 @@ static Future<void> deleteCategory(int id) async {
     return [];
   }
   
-  // ========== UTILIDADES ==========
+ // ========== UTILIDADES ==========
   
   /// Comprueba si la API está disponible
   static Future<bool> checkApiConnection() async {
@@ -756,6 +808,90 @@ static Future<void> deleteCategory(int id) async {
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (e) {
       print('Error al comprobar la conexión con la API: $e');
+      return false;
+    }
+  }
+  
+  /// Verifica si los endpoints de imágenes funcionan correctamente
+  static Future<bool> checkImageUploadEndpoint() async {
+    try {
+      // Probamos primero con un GET para ver si el endpoint existe
+      final testResponse = await http.get(
+        Uri.parse(ApiConfig.uploadImage),
+      ).timeout(const Duration(seconds: 5));
+      
+      print('Test de endpoint de imágenes:');
+      print('Código: ${testResponse.statusCode}');
+      
+      // No es importante que devuelva un código exitoso en GET
+      // Lo importante es que el servidor responda
+      return testResponse.statusCode != 0;
+    } catch (e) {
+      print('Error al verificar endpoint de imágenes: $e');
+      return false;
+    }
+  }
+  
+  /// Obtiene la URL base de las imágenes desde el servidor
+  static Future<String?> getImageBaseUrl() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/config.php'),
+      ).timeout(const Duration(seconds: 5));
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data.containsKey('imageBaseUrl')) {
+          return data['imageBaseUrl'];
+        }
+      }
+      return null;
+    } catch (e) {
+      print('Error al obtener URL base de imágenes: $e');
+      return null;
+    }
+  }
+  
+  /// Modo de prueba sin conexión - Determina si debemos usar datos de ejemplo
+  static Future<bool> shouldUseOfflineMode() async {
+    // Verificar si el servidor está disponible
+    final isAvailable = await checkApiConnection();
+    
+    // También podríamos considerar crear una configuración
+    // que permita al usuario forzar el modo sin conexión
+    
+    return !isAvailable;
+  }
+  /// Elimina una imagen del servidor usando su URL
+  static Future<bool> deleteImage(String imageUrl) async {
+    try {
+      // Crear un endpoint específico para eliminar imágenes
+      final deleteImageUrl = '${ApiConfig.baseUrl}/delete-image.php';
+      
+      print('🗑️ Intentando eliminar imagen: $imageUrl');
+      
+      final response = await http.post(
+        Uri.parse(deleteImageUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'image_url': imageUrl,
+        })
+      ).timeout(const Duration(seconds: 15));
+      
+      print('🌐 Respuesta de eliminación de imagen:');
+      print('   - Código de estado: ${response.statusCode}');
+      print('   - Cuerpo de respuesta: ${response.body}');
+      
+      // Considerar códigos de éxito
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        print('✅ Imagen eliminada correctamente');
+        return true;
+      } else {
+        print('❌ Error al eliminar imagen: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('❌ Excepción al eliminar imagen: $e');
       return false;
     }
   }

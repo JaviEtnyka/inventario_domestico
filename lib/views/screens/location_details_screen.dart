@@ -22,6 +22,7 @@ class _LocationDetailsScreenState extends State<LocationDetailsScreen> {
   final ItemController _itemController = ItemController();
   bool _isLoading = false;
   int _itemCount = 0;
+  int _currentImageIndex = 0;
   
   @override
   void initState() {
@@ -170,6 +171,10 @@ class _LocationDetailsScreenState extends State<LocationDetailsScreen> {
                 ],
               ),
             ),
+            
+            // Galería de imágenes
+            if (widget.location.imageUrls != null && widget.location.imageUrls!.isNotEmpty)
+              _buildImageGallery(),
             
             // Contenido
             Padding(
@@ -356,6 +361,141 @@ class _LocationDetailsScreenState extends State<LocationDetailsScreen> {
     );
   }
   
+  Widget _buildImageGallery() {
+  // Asegurar que imageUrls no sea nulo y tenga elementos
+  List<String> imageUrls = widget.location.imageUrls ?? [];
+  if (imageUrls.isEmpty) return const SizedBox();
+  
+  print('URLs de imágenes para mostrar: $imageUrls'); // Depuración
+  
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final maxWidth = constraints.maxWidth;
+      
+      return Column(
+        children: [
+          // Imagen principal con altura proporcional al ancho
+          Container(
+            height: maxWidth * 0.7,
+            width: double.infinity,
+            color: Colors.black,
+            child: PageView.builder(
+              itemCount: imageUrls.length,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentImageIndex = index;
+                });
+              },
+              itemBuilder: (context, index) {
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      imageUrls[index],
+                      fit: BoxFit.contain,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded / 
+                                  loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        print('Error cargando imagen: $error');
+                        return Container(
+                          color: Colors.grey[300],
+                          child: const Center(
+                            child: Icon(
+                              Icons.broken_image,
+                              color: Colors.grey,
+                              size: 50,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    // Indicador de número de imagen
+                    Positioned(
+                      bottom: 16,
+                      right: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${index + 1}/${imageUrls.length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          
+          // Miniaturas
+          if (imageUrls.length > 1)
+            SizedBox(
+              height: 80,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                itemCount: imageUrls.length,
+                itemBuilder: (context, index) {
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _currentImageIndex = index;
+                      });
+                    },
+                    child: Container(
+                      width: 70,
+                      height: 70,
+                      margin: const EdgeInsets.symmetric(horizontal: 5),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _currentImageIndex == index
+                              ? AppTheme.locationColor
+                              : Colors.grey[300]!,
+                          width: 2,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Image.network(
+                          imageUrls[index],
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            print('Error cargando miniatura: $error');
+                            return Container(
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.broken_image),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      );
+    }
+  );
+}
+  
   Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -481,20 +621,37 @@ class _LocationDetailsScreenState extends State<LocationDetailsScreen> {
   
   // Eliminar ubicación
   void _deleteLocation(BuildContext context) async {
+    Navigator.pop(context); // Cerrar diálogo
+    
+    setState(() {
+      _isLoading = true;
+    });
+    
     try {
-      // Aquí necesitarías implementar la función deleteLocation en tu LocationController
-      // await _locationController.deleteLocation(widget.location.id!);
+      await _locationController.deleteLocation(widget.location.id!);
       
-      Navigator.pop(context); // Cerrar diálogo
+      setState(() {
+        _isLoading = false;
+      });
+      
       Navigator.pop(context, true); // Volver a la pantalla anterior con resultado positivo
       
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ubicación eliminada correctamente')),
+        const SnackBar(
+          content: Text('Ubicación eliminada correctamente'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
-      Navigator.pop(context); // Cerrar diálogo
+      setState(() {
+        _isLoading = false;
+      });
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al eliminar la ubicación: $e')),
+        SnackBar(
+          content: Text('Error al eliminar la ubicación: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
